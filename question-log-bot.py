@@ -58,7 +58,7 @@ class MessageLogger:
 class LogBot(irc.IRCClient):
     """A logging IRC bot."""
 
-    nickname = "inctf-bot-2"
+    nickname = "pappu"
 
     def connectionMade(self):
         irc.IRCClient.connectionMade(self)
