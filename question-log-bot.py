@@ -93,7 +93,7 @@ class LogBot(irc.IRCClient):
 
         # If message is a question, save to database and insert into factory
         # question dictionary
-        if msg.startswith("QUESTION:"):
+        if msg.startswith("QUESTION:") and channel == "#inctf-chat":
             question = msg.split(':')[1]
             self.factory.dbpool.runQuery(self.factory.insert_query,
                                         (int(time.time()), nick, question, 0))
