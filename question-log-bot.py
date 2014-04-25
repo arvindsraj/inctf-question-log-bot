@@ -97,6 +97,10 @@ class LogBot(irc.IRCClient):
             question = msg.split(':')[1]
             self.factory.dbpool.runQuery(self.factory.insert_query,
                                         (int(time.time()), nick, question, 0))
+            adict = {}
+            adict['nick'] = nick
+            adict['question'] = question
+            self.factory.questions.append(adict)
 
     def action(self, user, channel, msg):
         """This will get called when the bot sees someone do an action."""
