@@ -102,12 +102,15 @@ class LogBot(irc.IRCClient):
             adict['question'] = question
             self.factory.questions.append(adict)
         elif nick in self.factory.admins and msg.startswith("@next"):
+            send_msg = ""
             if self.factory.questions == []:
-                self.msg("#inctf-chat", "Queue is empty!")
+                send_msg = "Queue is empty!"
             else:
                 question = self.factory.questions.pop(0)
                 send_msg = question["nick"] + " asked \"" + question['question'] + "\""
-                self.msg("#inctf-chat", send_msg)
+
+            self.msg("#inctf-chat", send_msg)
+            self.logger.log("<%s> %s" % ("pappu", send_msg))
 
     def action(self, user, channel, msg):
         """This will get called when the bot sees someone do an action."""
