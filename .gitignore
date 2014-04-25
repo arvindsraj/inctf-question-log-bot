@@ -67,3 +67,6 @@ Session.vim
 
 ### database file ###
 data.db
+
+### log file ###
+inctf-logs.txt
