@@ -97,8 +97,7 @@ class LogBot(irc.IRCClient):
 
     def action(self, user, channel, msg):
         """This will get called when the bot sees someone do an action."""
-        user = user.split('!', 1)[0]
-        self.logger.log("* %s %s" % (user, msg))
+        return
 
     # irc callbacks
 
