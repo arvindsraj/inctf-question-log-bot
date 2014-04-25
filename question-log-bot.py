@@ -28,11 +28,13 @@ To run the script:
 
 
 # twisted imports
+from twisted.enterprise import adbapi
 from twisted.words.protocols import irc
 from twisted.internet import reactor, protocol
 from twisted.python import log
 
 # system imports
+import os
 import sys
 import time
 
@@ -82,18 +84,19 @@ class LogBot(irc.IRCClient):
 
     def privmsg(self, user, channel, msg):
         """This will get called when the bot receives a message."""
-        user = user.split('!', 1)[0]
-        self.logger.log("<%s> %s" % (user, msg))
+        nick = user.split('!', 1)[0]
+        self.logger.log("<%s> %s" % (nick, msg))
 
         # Check to see if they're sending me a private message
         if channel == self.nickname:
             return
 
-        # Otherwise check to see if it is a message directed at me
-        if msg.startswith(self.nickname + ":"):
-            msg = "%s: I am a log bot" % user
-            self.msg(channel, msg)
-            self.logger.log("<%s> %s" % (self.nickname, msg))
+        # If message is a question, save to database and insert into factory
+        # question dictionary
+        if msg.startswith("QUESTION:"):
+            question = msg.split(':')[1]
+            self.factory.dbpool.runQuery(self.factory.insert_query,
+                                        (int(time.time()), nick, question, 0))
 
     def action(self, user, channel, msg):
         """This will get called when the bot sees someone do an action."""
@@ -123,7 +126,15 @@ class LogBotFactory(protocol.ClientFactory):
 
     def __init__(self, channel, filename):
         self.channel = channel
+        self.database_file = os.path.join(os.path.dirname(__file__), 'data.db')
+        self.dbpool = adbapi.ConnectionPool("sqlite3", self.database_file)
         self.filename = filename
+        self.insert_query = "INSERT INTO questions(timestamp, nick, question, answered) values(?, ?, ?, ?)"
+        self.questions = []
+        self.retrieve = "SELECT nick, question from questions where answered = 0 order by timestamp"
+
+    def __del__(self):
+        self.dbpool.close()
 
     def buildProtocol(self, addr):
         p = LogBot()
