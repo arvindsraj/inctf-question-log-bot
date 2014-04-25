@@ -101,6 +101,13 @@ class LogBot(irc.IRCClient):
             adict['nick'] = nick
             adict['question'] = question
             self.factory.questions.append(adict)
+        elif nick in self.factory.admins and msg.startswith("@next"):
+            if self.factory.questions == []:
+                self.msg("#inctf-chat", "Queue is empty!")
+            else:
+                question = self.factory.questions.pop(0)
+                send_msg = question["nick"] + " asked \"" + question['question'] + "\""
+                self.msg("#inctf-chat", send_msg)
 
     def action(self, user, channel, msg):
         """This will get called when the bot sees someone do an action."""
@@ -129,11 +136,13 @@ class LogBotFactory(protocol.ClientFactory):
     """
 
     def __init__(self, channel, filename):
+        self.admins = ["bithin", "dnivra", "seshagiri"]
         self.channel = channel
         self.database_file = os.path.join(os.path.dirname(__file__), 'data.db')
         self.dbpool = adbapi.ConnectionPool("sqlite3", self.database_file)
         self.filename = filename
         self.insert_query = "INSERT INTO questions(timestamp, nick, question, answered) values(?, ?, ?, ?)"
+        self.main_channel = "#inctf"
         self.questions = []
         self.retrieve = "SELECT nick, question from questions where answered = 0 order by timestamp"
 
