@@ -76,7 +76,8 @@ class LogBot(irc.IRCClient):
 
     def signedOn(self):
         """Called when bot has succesfully signed on to server."""
-        self.join(self.factory.channel)
+        self.join(self.factory.chat_channel)
+        self.join(self.factory.main_channel)
 
     def joined(self, channel):
         """This will get called when the bot joins the channel."""
@@ -93,7 +94,7 @@ class LogBot(irc.IRCClient):
 
         # If message is a question, save to database and insert into factory
         # question dictionary
-        if msg.startswith("QUESTION:") and channel == "#inctf-chat":
+        if msg.startswith("QUESTION:") and channel == self.factory.chat_channel:
             question = msg.split(':')[1]
             self.factory.dbpool.runQuery(self.factory.insert_query,
                                         (int(time.time()), nick, question, 0))
@@ -101,7 +102,7 @@ class LogBot(irc.IRCClient):
             adict['nick'] = nick
             adict['question'] = question
             self.factory.questions.append(adict)
-        elif nick in self.factory.admins and msg.startswith("@next"):
+        elif channel == self.factory.main_channel and nick in self.factory.admins and msg == "@next":
             send_msg = ""
             if self.factory.questions == []:
                 send_msg = "Queue is empty!"
@@ -109,7 +110,7 @@ class LogBot(irc.IRCClient):
                 question = self.factory.questions.pop(0)
                 send_msg = question["nick"] + " asked \"" + question['question'] + "\""
 
-            self.msg("#inctf-chat", send_msg)
+            self.msg(self.factory.main_channel, send_msg)
             self.logger.log("<%s> %s" % ("pappu", send_msg))
 
     def action(self, user, channel, msg):
@@ -138,12 +139,12 @@ class LogBotFactory(protocol.ClientFactory):
     A new protocol instance will be created each time we connect to the server.
     """
 
-    def __init__(self, channel, filename):
+    def __init__(self):
         self.admins = ["bithin", "dnivra", "seshagiri"]
-        self.channel = channel
+        self.chat_channel = "#inctf-chat"
         self.database_file = os.path.join(os.path.dirname(__file__), 'data.db')
         self.dbpool = adbapi.ConnectionPool("sqlite3", self.database_file)
-        self.filename = filename
+        self.filename = "inctf-logs.txt"
         self.insert_query = "INSERT INTO questions(timestamp, nick, question, answered) values(?, ?, ?, ?)"
         self.main_channel = "#inctf"
         self.questions = []
@@ -185,7 +186,7 @@ if __name__ == '__main__':
     log.startLogging(sys.stdout)
 
     # create factory protocol and application
-    f = LogBotFactory(sys.argv[1], sys.argv[2])
+    f = LogBotFactory()
 
     # connect factory to this host and port
     reactor.connectTCP("irc.freenode.net", 6667, f)
