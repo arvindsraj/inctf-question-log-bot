@@ -110,6 +110,7 @@ class LogBot(irc.IRCClient):
             else:
                 question = self.factory.questions.pop(0)
                 send_msg = question["nick"] + " asked \"" + question['question'] + "\""
+                self.factory.dbpool.runOperation(self.factory.update_query, (question["nick"], question["question"]))
 
             self.msg(self.factory.main_channel, send_msg)
             self.logger.log("<%s> %s" % ("pappu", send_msg))
@@ -150,6 +151,7 @@ class LogBotFactory(protocol.ClientFactory):
         self.main_channel = "#inctf"
         self.questions = []
         self.retrieve = "SELECT nick, question from questions where answered = 0 order by timestamp"
+        self.update_query = "UPDATE questions set answered = 1 where nick = ? and question = ?"
         query = self.dbpool.runQuery(self.retrieve)
         query.addCallbacks(self.retr_success, self.retr_failure)
 
