@@ -145,6 +145,8 @@ class LogBotFactory(protocol.ClientFactory):
         self.main_channel = "#inctf"
         self.questions = []
         self.retrieve = "SELECT nick, question from questions where answered = 0 order by timestamp"
+        query = self.dbpool.runQuery(self.retrieve)
+        query.addCallbacks(self.retr_success, self.retr_failure)
 
     def __del__(self):
         self.dbpool.close()
@@ -161,6 +163,18 @@ class LogBotFactory(protocol.ClientFactory):
     def clientConnectionFailed(self, connector, reason):
         print "connection failed:", reason
         reactor.stop()
+
+    def retr_success(self, rows):
+        for row in rows:
+            adict = {}
+            adict['nick'] = str(row[0])
+            adict['question'] = str(row[1])
+            self.questions.append(adict)
+
+        return
+
+    def retr_failure(self, err):
+        print(err)
 
 
 if __name__ == '__main__':
